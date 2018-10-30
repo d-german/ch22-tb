@@ -18,17 +18,25 @@ namespace JoinQueries
          // Entity Framework DbContext
          var dbcontext = new BooksExamples.BooksEntities();
 
-         // get authors and ISBNs of each book they co-authored
-         var authorsAndISBNs =
-            from author in dbcontext.Authors
-            from book in author.Titles
-            orderby author.LastName, author.FirstName
-            select new { author.FirstName, author.LastName, book.ISBN };
+            // get authors and ISBNs of each book they co-authored
+            var authorsAndISBNs =
+               from author in dbcontext.Authors
+               from title in author.Titles
+               orderby author.LastName, author.FirstName
+               select new { author.FirstName, author.LastName, title.ISBN };
 
-         outputTextBox.AppendText("Authors and ISBNs:");
+          var authorsAndISBNsMethodSyntax = dbcontext
+              .Authors
+              .SelectMany(a => a.Titles,
+                  (author, title) => new {author, title = title})
+              .OrderBy(t => t.author.LastName)
+              .ThenBy(t => t.author.FirstName)
+              .Select(t => new {t.author.FirstName, t.author.LastName, t.title.ISBN});
+
+            outputTextBox.AppendText("Authors and ISBNs:");
 
          // display authors and ISBNs in tabular format
-         foreach (var element in authorsAndISBNs)
+         foreach (var element in authorsAndISBNsMethodSyntax)
          {
             outputTextBox.AppendText($"\r\n\t{element.FirstName,-10} " +
                $"{element.LastName,-10} {element.ISBN,-10}");
@@ -41,7 +49,16 @@ namespace JoinQueries
             orderby author.LastName, author.FirstName, book.Title1
             select new { author.FirstName, author.LastName, book.Title1 };
 
-         outputTextBox.AppendText("\r\n\r\nAuthors and titles:");
+          var authorsAndTitlesMethodSyntax = dbcontext
+              .Titles
+              .SelectMany(book => book.Authors, 
+                  (book, author) => new {book, author})
+              .OrderBy(t => t.author.LastName)
+              .ThenBy(t => t.author.FirstName)
+              .ThenBy(t => t.book.Title1)
+              .Select(t => new {t.author.FirstName, t.author.LastName, t.book.Title1});
+
+            outputTextBox.AppendText("\r\n\r\nAuthors and titles:");
 
          // display authors and titles in tabular format
          foreach (var element in authorsAndTitles)
